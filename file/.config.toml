@@ -1,0 +1,14 @@
+[app]
+name = "app-crowdfunding"
+version = "1.0"
+
+[server]
+port = "8080"
+
+[database]
+host = "localhost"
+port = 5432
+username = "eggno"
+password = "12345"
+name = "roam"
+ssl_mode = "disable"
