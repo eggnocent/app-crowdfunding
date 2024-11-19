@@ -13,6 +13,7 @@ var (
 	user        *api.UserAPIModule
 	login       *api.LoginModule
 	register    *api.RegistrationModule
+	campaign    *api.CampaignModule
 )
 
 func Init(db *sqlx.DB) {
@@ -20,8 +21,9 @@ func Init(db *sqlx.DB) {
 	user = api.NewUserAPIModule(db)
 	login = api.NewLoginModule(db)
 	register = api.NewRegistrationModule(db)
+	campaign = api.NewCampaignModule(db)
 }
 
 func GetAuthMiddleware() func(http.Handler) http.Handler {
-	return helper.AuthMiddleware(authService, user)
+	return helper.AuthMiddleware(authService)
 }

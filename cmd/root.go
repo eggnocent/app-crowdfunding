@@ -55,6 +55,7 @@ var rootCmd = &cobra.Command{
 		apiV1Session.Use(router.GetAuthMiddleware())
 
 		v1.NewAPIUser(apiV1Session)
+		v1.NewCampaign(apiV1Session)
 
 		// Jalankan server
 		port := viper.GetString("server.port")
