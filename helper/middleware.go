@@ -20,7 +20,7 @@ const (
 	ContextUserKey contextKey = "currentUser"
 )
 
-func AuthMiddleware(authService *api.JWTService, userModule *api.UserAPIModule) func(http.Handler) http.Handler {
+func AuthMiddleware(authService *api.JWTService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -42,36 +42,25 @@ func AuthMiddleware(authService *api.JWTService, userModule *api.UserAPIModule) 
 				return
 			}
 
-			// Mengambil klaim dari token
 			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok {
 				util.WriteErrorResponse(w, http.StatusUnauthorized, "Invalid token claims")
 				return
 			}
 
-			// Mengambil user_id dari klaim
 			userIDStr, ok := claims["user_id"].(string)
 			if !ok {
 				util.WriteErrorResponse(w, http.StatusUnauthorized, "Invalid user ID in token")
 				return
 			}
 
-			// Mengonversi user_id ke UUID
 			userID, err := uuid.Parse(userIDStr)
 			if err != nil {
 				util.WriteErrorResponse(w, http.StatusUnauthorized, "Invalid user ID format")
 				return
 			}
 
-			// Mengambil pengguna dari API
-			user, err := userModule.GetByID(r.Context(), userID)
-			if err != nil {
-				util.WriteErrorResponse(w, http.StatusUnauthorized, "User not found")
-				return
-			}
-
-			// Menyimpan pengguna ke context
-			ctx := context.WithValue(r.Context(), ContextUserKey, user)
+			ctx := context.WithValue(r.Context(), "user_id", userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
