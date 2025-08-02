@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,6 +20,7 @@ type CampaignModel struct {
 	Perks            string    `db:"perks"`
 	BackerCount      int       `db:"backer_count"`
 	Slug             string    `db:"slug"`
+	ImageURL         string    `db:"image_url"`
 	CreatedAt        time.Time `db:"created_at"`
 	UpdatedAt        time.Time `db:"updated_at"`
 }
@@ -34,6 +36,7 @@ type CampaignResponse struct {
 	Perks            string    `json:"perks"`
 	BackerCount      int       `json:"backer_count"`
 	Slug             string    `json:"slug"`
+	ImageURL         string    `json:"image_url"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }
@@ -50,13 +53,33 @@ func NewCampaignResponse(c *CampaignModel) CampaignResponse {
 		Perks:            c.Perks,
 		BackerCount:      c.BackerCount,
 		Slug:             c.Slug,
+		ImageURL:         c.ImageURL,
 		CreatedAt:        c.CreatedAt,
 		UpdatedAt:        c.UpdatedAt,
 	}
 }
 
 func GetAllCampaign(ctx context.Context, db *sqlx.DB) ([]CampaignModel, error) {
-	query := `SELECT id, user_id, name, short_description, description, goal_amount, current_amount, perks, backer_count, slug, created_at, updated_at FROM campaigns`
+
+	query := `
+    SELECT 
+        c.id, 
+        c.user_id, 
+        c.name, 
+        c.short_description, 
+        c.description, 
+        c.goal_amount, 
+        c.current_amount, 
+        c.perks, 
+        c.backer_count, 
+        c.slug, 
+        COALESCE(ci.file_name, '') AS image_url, 
+        c.created_at, 
+        c.updated_at
+    FROM campaigns c
+    LEFT JOIN campaigns_images ci 
+    ON ci.campaign_id = c.id AND ci.is_primary = TRUE
+`
 
 	rows, err := db.QueryxContext(ctx, query)
 	if err != nil {
@@ -77,8 +100,16 @@ func GetAllCampaign(ctx context.Context, db *sqlx.DB) ([]CampaignModel, error) {
 }
 
 func GetCampaignByID(ctx context.Context, db *sqlx.DB, id uuid.UUID) (CampaignModel, error) {
+	query := `
+		SELECT 
+			c.id, c.user_id, c.name, c.short_description, c.description, 
+			c.goal_amount, c.current_amount, c.perks, c.backer_count, c.slug, 
+			COALESCE(ci.file_name, '') AS image_url, c.created_at, c.updated_at 
+		FROM campaigns c
+		LEFT JOIN campaigns_images ci ON ci.campaign_id = c.id AND ci.is_primary = TRUE
+		WHERE c.id = $1
+	`
 	var campaign CampaignModel
-	query := `SELECT id, user_id, name, short_description, description, goal_amount, current_amount, perks, backer_count, slug, created_at, updated_at FROM campaigns WHERE id = $1`
 	err := db.GetContext(ctx, &campaign, query, id)
 	if err != nil {
 		return CampaignModel{}, err
@@ -117,14 +148,15 @@ func (c *CampaignModel) CreateCampaign(ctx context.Context, db *sqlx.DB) error {
 	}
 	return nil
 }
-
 func (c *CampaignModel) UpdateCampaign(ctx context.Context, db *sqlx.DB) error {
 	query := `
 		UPDATE campaigns 
-		SET name = $1, short_description = $2, description = $3, goal_amount = $4, perks = $5, updated_at = $6
-		WHERE id = $7
+		SET name = $1, short_description = $2, description = $3, goal_amount = $4, perks = $5, current_amount = $6, backer_count = $7, updated_at = $8
+		WHERE id = $9
 		RETURNING updated_at
-    `
+	`
+
+	log.Printf("Updating Campaign: %+v", c)
 
 	err := db.QueryRowxContext(ctx, query,
 		c.Name,
@@ -132,14 +164,13 @@ func (c *CampaignModel) UpdateCampaign(ctx context.Context, db *sqlx.DB) error {
 		c.Description,
 		c.GoalAmount,
 		c.Perks,
+		c.CurrentAmount,
+		c.BackerCount,
 		time.Now(),
 		c.ID,
-	).Scan(
-		&c.UpdatedAt,
-	)
-
+	).Scan(&c.UpdatedAt)
 	if err != nil {
-		return err
+		log.Printf("Error updating campaign: %v", err)
 	}
-	return nil
+	return err
 }

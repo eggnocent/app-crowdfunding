@@ -4,6 +4,7 @@ import (
 	"app-crowdfunding/model"
 	"app-crowdfunding/util"
 	"context"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -109,8 +110,10 @@ func (cm *CampaignModule) UpdateCampaign(ctx context.Context, id uuid.UUID, inpu
 	campaign.ID = id
 	err = campaign.UpdateCampaign(ctx, cm.db)
 	if err != nil {
+		log.Printf("Error Updating Campaign in Database: %v", err)
 		return model.CampaignResponse{}, util.NewErrorWrap(err, cm.name, "update", ctx, "unable to update campaign", http.StatusInternalServerError)
 	}
+	log.Println("Campaign Successfully Updated in Database")
 
 	return model.NewCampaignResponse(&campaign), nil
 }

@@ -12,3 +12,7 @@ username = "eggno"
 password = "12345"
 name = "roam"
 ssl_mode = "disable"
+
+[midtrans]
+server_key = ""
+

@@ -12,4 +12,5 @@ func NewCampaign(r *mux.Router) {
 	r.HandleFunc("/campaigns/{id}", router.HandlerDetailByIDCampaign).Methods(http.MethodGet)
 	r.HandleFunc("/campaigns", router.HandlerCreateCampaign).Methods(http.MethodPost)
 	r.HandleFunc("/campaigns/{id}", router.HandlerUpdateCampaign).Methods(http.MethodPut)
+	r.HandleFunc("/campaigns/images", router.HandlerUploadCampaignImage).Methods(http.MethodPost)
 }

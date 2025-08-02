@@ -56,6 +56,7 @@ var rootCmd = &cobra.Command{
 
 		v1.NewAPIUser(apiV1Session)
 		v1.NewCampaign(apiV1Session)
+		v1.NewTransaction(apiV1Session)
 
 		// Jalankan server
 		port := viper.GetString("server.port")
